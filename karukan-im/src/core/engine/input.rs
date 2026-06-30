@@ -171,20 +171,7 @@ impl InputMethodEngine {
             // Detect Shift+letter: shift modifier with alphabetic, OR uppercase keysym.
             // fcitx5 may resolve Shift into the keysym (sending 'A' instead of 'a'+shift),
             // so we must also check for uppercase to handle both cases.
-            let is_shift_alpha =
-                ch.is_ascii_uppercase() || (shift_active && ch.is_ascii_alphabetic());
-
-            if is_shift_alpha {
-                // Shift-alphabet is a temporary per-word mode, not a sticky
-                // toggle: ModeState remembers the mode to restore when this
-                // word is committed, so the next word returns to kana (#37).
-                self.mode.enter_temporary(InputMode::Alphabet);
-            }
-            let ch = if self.mode.current() == InputMode::Alphabet && is_shift_alpha {
-                ch.to_ascii_uppercase()
-            } else {
-                ch
-            };
+            // Shift+alpha alphabet-mode switch disabled (accidental trigger)
             return self.start_input(ch);
         }
         EngineResult::not_consumed()
@@ -250,8 +237,8 @@ impl InputMethodEngine {
             match key.keysym {
                 // Ctrl+Space: insert full-width space (U+3000)
                 Keysym::SPACE => return self.input_fullwidth_space(),
-                // Ctrl+K: enter katakana mode
-                Keysym::KEY_K | Keysym::KEY_K_UPPER => return self.enter_katakana_mode(),
+                // Ctrl+K: katakana mode disabled
+                // Keysym::KEY_K | Keysym::KEY_K_UPPER => return self.enter_katakana_mode(),
                 // Ctrl+A: move to beginning (Emacs-style Home)
                 Keysym::KEY_A | Keysym::KEY_A_UPPER => return self.move_caret_home(),
                 // Ctrl+B: move left (Emacs-style Left)
@@ -286,27 +273,7 @@ impl InputMethodEngine {
                 {
                     // Detect Shift+letter: shift modifier with alphabetic, OR uppercase keysym.
                     // fcitx5 may resolve Shift into the keysym (sending 'A' instead of 'a'+shift).
-                    let is_shift_alpha =
-                        ch.is_ascii_uppercase() || (shift_active && ch.is_ascii_alphabetic());
-
-                    if is_shift_alpha && self.mode.current() != InputMode::Alphabet {
-                        // Bake katakana before switching so preedit doesn't revert
-                        if self.mode.current() == InputMode::Katakana {
-                            self.bake_katakana();
-                        }
-                        // Shift-alphabet is a temporary per-word mode:
-                        // ModeState remembers the mode to restore on
-                        // commit/cancel, so the next word returns to the
-                        // prior mode (issue #37).
-                        self.mode.enter_temporary(InputMode::Alphabet);
-                        self.flush_romaji_to_composed();
-                        self.live.text.clear();
-                    }
-                    let ch = if self.mode.current() == InputMode::Alphabet && is_shift_alpha {
-                        ch.to_ascii_uppercase()
-                    } else {
-                        ch
-                    };
+                    // Shift+alpha alphabet-mode switch disabled (accidental trigger)
                     return self.input_char(ch);
                 }
                 EngineResult::not_consumed()
