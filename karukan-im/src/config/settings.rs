@@ -83,6 +83,8 @@ pub struct LearningSettings {
     /// cache; longer conversion results (e.g. whole live-converted
     /// sentences) are not learned
     pub max_surface_chars: usize,
+    /// Maximum reading length (in characters) to learn (0 = no limit)
+    pub max_reading_chars: usize,
 }
 
 impl Default for Settings {

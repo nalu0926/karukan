@@ -45,6 +45,7 @@ fn test_conversion_char_commits_and_continues_romaji() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_alphabet_mode_space_inserts_literal_space() {
     let mut engine = InputMethodEngine::new();
 

@@ -3,6 +3,7 @@ use super::*;
 // --- Mode toggle key tests (one-way: alphabet → hiragana) ---
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_mode_toggle_key_switches_alphabet_to_hiragana() {
     let mut engine = InputMethodEngine::new();
 
@@ -38,6 +39,7 @@ fn test_mode_toggle_key_noop_in_hiragana() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_mode_toggle_key_during_alphabet_input() {
     let mut engine = InputMethodEngine::new();
 
@@ -59,6 +61,7 @@ fn test_mode_toggle_key_during_alphabet_input() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_super_r_also_switches_alphabet_to_hiragana() {
     let mut engine = InputMethodEngine::new();
 
@@ -73,6 +76,7 @@ fn test_super_r_also_switches_alphabet_to_hiragana() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_meta_r_also_switches_alphabet_to_hiragana() {
     let mut engine = InputMethodEngine::new();
 
@@ -87,6 +91,7 @@ fn test_meta_r_also_switches_alphabet_to_hiragana() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_henkan_switches_alphabet_to_hiragana() {
     // JIS 変換 key: the dedicated hiragana-return key for Japanese
     // keyboards, so JIS users aren't forced onto the right-modifier
@@ -109,6 +114,7 @@ fn test_henkan_switches_alphabet_to_hiragana() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_henkan_switches_katakana_to_hiragana_and_bakes_preedit() {
     let mut engine = InputMethodEngine::new();
 
@@ -140,6 +146,7 @@ fn test_henkan_noop_in_hiragana_passes_through() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_henkan_release_is_not_consumed() {
     let mut engine = InputMethodEngine::new();
     engine.process_key(&press_shift('A'));
@@ -152,6 +159,7 @@ fn test_henkan_release_is_not_consumed() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_modified_henkan_chord_is_not_hijacked() {
     // Ctrl+変換 may be an app or fcitx5 shortcut: only the bare press
     // toggles. The chord must not be consumed and must not switch modes.
@@ -165,6 +173,7 @@ fn test_modified_henkan_chord_is_not_hijacked() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_toggle_key_is_inert_during_conversion() {
     // Regression: toggling mid-Conversion used to katakana-bake the
     // conversion reading (Katakana mode) and defeat the Emoji-mode

@@ -34,6 +34,9 @@ pub struct LearningConfig {
     /// accepts. Keeps whole-sentence live-conversion commits — one-off text
     /// that never matches again — out of the cache.
     pub max_surface_chars: usize,
+    /// Maximum reading length (Unicode chars) that [`LearningCache::record`]
+    /// accepts (0 = no limit). Keeps long readings from bloating prediction.
+    pub max_reading_chars: usize,
 }
 
 impl LearningConfig {
@@ -41,6 +44,8 @@ impl LearningConfig {
     pub const DEFAULT_MAX_ENTRIES: usize = 10_000;
     /// Default for [`max_surface_chars`](Self::max_surface_chars).
     pub const DEFAULT_MAX_SURFACE_CHARS: usize = 50;
+    /// Default for [`max_reading_chars`](Self::max_reading_chars).
+    pub const DEFAULT_MAX_READING_CHARS: usize = 0;
 }
 
 impl Default for LearningConfig {
@@ -48,6 +53,7 @@ impl Default for LearningConfig {
         Self {
             max_entries: Self::DEFAULT_MAX_ENTRIES,
             max_surface_chars: Self::DEFAULT_MAX_SURFACE_CHARS,
+            max_reading_chars: Self::DEFAULT_MAX_READING_CHARS,
         }
     }
 }
@@ -61,6 +67,7 @@ pub struct LearningCache {
     entries: HashMap<String, Vec<LearningEntry>>,
     max_entries: usize,
     max_surface_chars: usize,
+    max_reading_chars: usize,
     dirty: bool,
 }
 
@@ -71,6 +78,7 @@ impl LearningCache {
             entries: HashMap::new(),
             max_entries: config.max_entries,
             max_surface_chars: config.max_surface_chars,
+            max_reading_chars: config.max_reading_chars,
             dirty: false,
         }
     }
@@ -78,9 +86,13 @@ impl LearningCache {
     /// Record a user selection. Increments frequency and updates last_access.
     ///
     /// Surfaces longer than `max_surface_chars` are skipped; see
-    /// [`LearningConfig::max_surface_chars`] for why.
+    /// [`LearningConfig::max_surface_chars`] for why. Readings longer than
+    /// `max_reading_chars` (0 = no limit) are skipped as well.
     pub fn record(&mut self, reading: &str, surface: &str) {
         if surface.chars().count() > self.max_surface_chars {
+            return;
+        }
+        if self.max_reading_chars > 0 && reading.chars().count() > self.max_reading_chars {
             return;
         }
         let now = now_unix();
@@ -548,6 +560,7 @@ mod tests {
         let mut cache = LearningCache::new(LearningConfig {
             max_entries: 100,
             max_surface_chars: 5,
+            ..LearningConfig::default()
         });
 
         cache.record("あ", &"漢".repeat(6));
@@ -564,6 +577,7 @@ mod tests {
         let mut cache = LearningCache::new(LearningConfig {
             max_entries: 100,
             max_surface_chars: 5,
+            ..LearningConfig::default()
         });
 
         // Only the surface is capped; a long reading with a short surface

@@ -38,3 +38,5 @@ enabled = true
 max_entries = 10000
 # 学習する変換結果の最大文字数
 max_surface_chars = 50
+# 学習する読みの最大文字数（これを超える読みは学習しない。0 = 無制限）
+max_reading_chars = 8

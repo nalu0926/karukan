@@ -7,6 +7,7 @@ use super::*;
 // switches mode, baking, etc.).
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_ctrl_k_converts_to_katakana() {
     let mut engine = InputMethodEngine::new();
 
@@ -85,6 +86,7 @@ fn test_ctrl_k_with_empty_input() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_ctrl_k_uppercase_converts_to_katakana() {
     let mut engine = InputMethodEngine::new();
 
@@ -135,6 +137,7 @@ fn test_ctrl_k_uppercase_converts_to_katakana() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_katakana_baked_on_switch_to_alphabet() {
     let mut engine = InputMethodEngine::new();
 
@@ -175,6 +178,7 @@ fn test_katakana_baked_on_switch_to_alphabet() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_ctrl_k_is_one_way_to_katakana() {
     let mut engine = InputMethodEngine::new();
 

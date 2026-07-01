@@ -173,6 +173,7 @@ fn test_live_conversion_build_preedit() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_alphabet_mode_with_kana_keeps_converting() {
     // Live conversion must stay alive in alphabet mode as long as the buffer
     // still contains kana. Type hiragana, switch to alphabet mode, keep typing:
@@ -201,6 +202,7 @@ fn test_alphabet_mode_with_kana_keeps_converting() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_alphabet_mode_pure_latin_preserves_live_text() {
     // Regression guard for the original behavior: with no kana in the buffer,
     // alphabet mode preserves an existing live.text display without re-running

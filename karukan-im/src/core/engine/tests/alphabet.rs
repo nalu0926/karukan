@@ -19,6 +19,7 @@ fn test_shift_alone_does_not_toggle_mode() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_shift_letter_enters_alphabet_mode() {
     let mut engine = InputMethodEngine::new();
     assert!(engine.mode.current() != InputMode::Alphabet);
@@ -35,6 +36,7 @@ fn test_shift_letter_enters_alphabet_mode() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_shift_letter_fcitx5_lowercase_keysym() {
     // fcitx5 sends lowercase keysym 'a' (0x0061) with shift modifier flag
     let mut engine = InputMethodEngine::new();
@@ -55,6 +57,7 @@ fn test_shift_letter_fcitx5_lowercase_keysym() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_shift_letter_in_hiragana_enters_alphabet_and_uppercase() {
     let mut engine = InputMethodEngine::new();
 
@@ -74,6 +77,7 @@ fn test_shift_letter_in_hiragana_enters_alphabet_and_uppercase() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_uppercase_keysym_without_shift_flag_enters_alphabet() {
     // fcitx5 may resolve Shift into the keysym, sending 'A' (0x0041) without
     // the shift modifier flag. This must still enter alphabet mode.
@@ -95,6 +99,7 @@ fn test_uppercase_keysym_without_shift_flag_enters_alphabet() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_uppercase_keysym_without_shift_flag_composing() {
     // Same as above but in Composing state (hiragana already entered)
     let mut engine = InputMethodEngine::new();
@@ -151,6 +156,7 @@ fn test_shift_digit_stays_in_hiragana_mode() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_alphabet_mode_uppercase_with_shift() {
     let mut engine = InputMethodEngine::new();
 
@@ -174,6 +180,7 @@ fn test_alphabet_mode_uppercase_with_shift() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_alphabet_mode_direct_input() {
     let mut engine = InputMethodEngine::new();
 
@@ -193,6 +200,7 @@ fn test_alphabet_mode_direct_input() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_mixed_hiragana_alphabet_input() {
     let mut engine = InputMethodEngine::new();
 
@@ -228,6 +236,7 @@ fn test_mixed_hiragana_alphabet_input() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_shift_alphabet_reverts_to_hiragana_after_commit() {
     let mut engine = InputMethodEngine::new();
 
@@ -264,6 +273,7 @@ fn test_shift_alphabet_reverts_to_hiragana_after_cancel() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_shift_alphabet_reverts_to_hiragana_after_erase_to_empty() {
     let mut engine = InputMethodEngine::new();
 
@@ -278,6 +288,7 @@ fn test_shift_alphabet_reverts_to_hiragana_after_erase_to_empty() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_shift_alphabet_from_katakana_reverts_to_katakana() {
     let mut engine = InputMethodEngine::new();
 
@@ -297,6 +308,7 @@ fn test_shift_alphabet_from_katakana_reverts_to_katakana() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_alphabet_mode_aux_text() {
     let mut engine = InputMethodEngine::new();
 
@@ -325,6 +337,7 @@ fn test_shift_right_alone_does_not_toggle() {
 }
 
 #[test]
+#[ignore = "fork: shift-alphabet / Ctrl+K mode switches disabled"]
 fn test_reset_clears_alphabet_mode() {
     let mut engine = InputMethodEngine::new();
 
