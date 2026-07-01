@@ -57,6 +57,13 @@ git rebase upstream/main
 max_reading_chars = 8
 ```
 
+### 4. Shift+Space で候補を逆方向に移動
+
+変換候補選択中に Shift+Space で前の候補に戻る（一般的な IME の挙動に合わせる）。
+
+- `karukan-im/src/core/engine/conversion.rs`
+  - `process_key_conversion` で `Keysym::SPACE` に shift guard を追加し `prev_candidate()` を呼ぶ
+
 ## 運用メモ
 
 - 学習キャッシュ: `~/Library/Application Support/com.karukan.karukan-im/learning.tsv`
