@@ -6,6 +6,8 @@
 
 pub mod protocol;
 
+use std::time::{Duration, Instant};
+
 use serde_json::{Value, json};
 
 use crate::config::Settings;
@@ -13,6 +15,12 @@ use crate::core::candidate::CandidateList;
 use crate::core::engine::{EngineAction, EngineConfig, EngineResult, InputMethodEngine};
 use crate::core::keycode::{KeyEvent, Keysym};
 use crate::core::state::InputState;
+
+/// Minimum interval between opportunistic learning-blocklist purges.
+/// Purge runs piggybacked on incoming requests (no dedicated thread), so
+/// idle sessions simply skip the tick — no learning happens while idle
+/// either, so nothing goes uncleaned.
+const PURGE_INTERVAL: Duration = Duration::from_secs(3600);
 
 use protocol::{
     Action, CandidateItem, InitResult, KeyResult, PROTOCOL_VERSION, PreeditAttr, ProcessKeyParams,
@@ -28,6 +36,8 @@ pub struct ImServer {
     /// Pending settings, consumed by the first successful `init`.
     settings: Option<Settings>,
     initialized: bool,
+    /// Wall-clock of the most recent blocklist purge attempt.
+    last_purge: Instant,
 }
 
 impl Default for ImServer {
@@ -49,7 +59,21 @@ impl ImServer {
             engine: InputMethodEngine::with_config(config),
             settings: Some(settings),
             initialized: false,
+            last_purge: Instant::now(),
         }
+    }
+
+    /// Run a blocklist purge if `PURGE_INTERVAL` has elapsed since the last one.
+    /// Piggybacks on incoming requests; cheap enough to check every call.
+    fn maybe_purge_learning(&mut self) {
+        if !self.initialized {
+            return;
+        }
+        if self.last_purge.elapsed() < PURGE_INTERVAL {
+            return;
+        }
+        self.last_purge = Instant::now();
+        self.engine.purge_learning_blocklist();
     }
 
     /// Save the learning cache (called on EOF/shutdown).
@@ -70,6 +94,8 @@ impl ImServer {
                 return Some(serde_json::to_string(&resp).expect("response serialization"));
             }
         };
+
+        self.maybe_purge_learning();
 
         let id = request.id.clone();
         let result = self.dispatch(&request.method, request.params);
@@ -120,6 +146,11 @@ impl ImServer {
             "save_learning" => {
                 self.engine.save_learning();
                 Ok(json!({}))
+            }
+            "purge_learning_blocklist" => {
+                let removed = self.engine.purge_learning_blocklist();
+                self.last_purge = Instant::now();
+                Ok(json!({ "removed": removed }))
             }
             "status" => {
                 let state = match self.engine.state() {

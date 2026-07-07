@@ -156,6 +156,16 @@ impl Settings {
         Self::data_dir().map(|dir| dir.join("learning.tsv"))
     }
 
+    /// Get the learning blocklist file path.
+    ///
+    /// Surfaces listed here are never recorded into the learning cache, and
+    /// existing entries are purged periodically. One surface per line;
+    /// lines starting with `#` are comments.
+    /// Default: `~/.local/share/karukan-im/learning_blocklist.txt`
+    pub fn learning_blocklist_file() -> Option<PathBuf> {
+        Self::data_dir().map(|dir| dir.join("learning_blocklist.txt"))
+    }
+
     /// Load settings from the default configuration file.
     /// Falls back to embedded default.toml if the config file does not exist.
     pub fn load() -> Result<Self> {

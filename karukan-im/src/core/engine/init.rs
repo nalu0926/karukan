@@ -221,6 +221,51 @@ impl InputMethodEngine {
             }
         };
         self.learning = Some(cache);
+
+        // Attach blocklist (surface set) and purge any pre-existing hits.
+        if let Some(cache) = self.learning.as_mut() {
+            if let Some(bl_path) = Settings::learning_blocklist_file() {
+                if bl_path.exists() {
+                    match LearningCache::load_blocklist_file(&bl_path) {
+                        Ok(bl) => {
+                            let bl_len = bl.len();
+                            cache.set_blocklist(bl);
+                            let removed = cache.purge_blocklisted();
+                            tracing::info!(
+                                "Learning blocklist loaded from {:?} ({} surfaces, purged {} prior entries)",
+                                bl_path,
+                                bl_len,
+                                removed
+                            );
+                        }
+                        Err(e) => {
+                            debug!("Failed to load learning blocklist from {:?}: {}", bl_path, e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Purge blocklisted entries from the learning cache and save if anything changed.
+    /// Intended to be called on a timer (e.g. hourly) so background contamination
+    /// (learned surfaces that only later got added to the blocklist) is scrubbed.
+    /// Returns the number of entries purged.
+    pub fn purge_learning_blocklist(&mut self) -> usize {
+        let Some(cache) = self.learning.as_mut() else {
+            return 0;
+        };
+        let removed = cache.purge_blocklisted();
+        if removed > 0 {
+            if let Some(path) = Settings::learning_file() {
+                if let Err(e) = cache.save(&path) {
+                    tracing::warn!("Failed to save learning cache after purge: {}", e);
+                } else {
+                    tracing::info!("Learning cache purge: removed {} entries", removed);
+                }
+            }
+        }
+        removed
     }
 
     /// Initialize user dictionaries by scanning the user dictionary directory.

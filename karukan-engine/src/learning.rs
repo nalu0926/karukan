@@ -4,7 +4,7 @@
 //! boosts those candidates on subsequent conversions. Persisted as a
 //! simple TSV file (`reading\tsurface\tfrequency\tlast_access`).
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, Write};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -69,6 +69,10 @@ pub struct LearningCache {
     max_surface_chars: usize,
     max_reading_chars: usize,
     dirty: bool,
+    /// Surfaces that must never be recorded into the cache. Loaded from a
+    /// user-managed blocklist file at engine init; `record()` skips any
+    /// surface present here, and `purge_blocklisted()` scrubs prior entries.
+    blocklist: HashSet<String>,
 }
 
 impl LearningCache {
@@ -80,19 +84,78 @@ impl LearningCache {
             max_surface_chars: config.max_surface_chars,
             max_reading_chars: config.max_reading_chars,
             dirty: false,
+            blocklist: HashSet::new(),
         }
+    }
+
+    /// Replace the surface blocklist. Subsequent `record()` calls will
+    /// silently ignore any surface present in the set. Does not scrub
+    /// existing entries — call `purge_blocklisted()` for that.
+    pub fn set_blocklist(&mut self, blocklist: HashSet<String>) {
+        self.blocklist = blocklist;
+    }
+
+    /// Number of surfaces currently blocked.
+    pub fn blocklist_len(&self) -> usize {
+        self.blocklist.len()
+    }
+
+    /// Load a surface blocklist from a text file: one surface per line;
+    /// blank lines and lines starting with `#` are ignored.
+    pub fn load_blocklist_file(path: &Path) -> anyhow::Result<HashSet<String>> {
+        let file = std::fs::File::open(path)?;
+        let reader = std::io::BufReader::new(file);
+        let mut set = HashSet::new();
+        for line in reader.lines() {
+            let line = line?;
+            let s = line.trim();
+            if s.is_empty() || s.starts_with('#') {
+                continue;
+            }
+            set.insert(s.to_string());
+        }
+        Ok(set)
+    }
+
+    /// Remove every entry whose surface is in the blocklist.
+    /// Returns the number of (reading, surface) pairs removed.
+    pub fn purge_blocklisted(&mut self) -> usize {
+        if self.blocklist.is_empty() {
+            return 0;
+        }
+        let mut removed = 0usize;
+        let mut empty_readings: Vec<String> = Vec::new();
+        for (reading, entries) in self.entries.iter_mut() {
+            let before = entries.len();
+            entries.retain(|e| !self.blocklist.contains(&e.surface));
+            removed += before - entries.len();
+            if entries.is_empty() {
+                empty_readings.push(reading.clone());
+            }
+        }
+        for r in empty_readings {
+            self.entries.remove(&r);
+        }
+        if removed > 0 {
+            self.dirty = true;
+        }
+        removed
     }
 
     /// Record a user selection. Increments frequency and updates last_access.
     ///
     /// Surfaces longer than `max_surface_chars` are skipped; see
     /// [`LearningConfig::max_surface_chars`] for why. Readings longer than
-    /// `max_reading_chars` (0 = no limit) are skipped as well.
+    /// `max_reading_chars` (0 = no limit) and blocklisted surfaces are
+    /// skipped as well.
     pub fn record(&mut self, reading: &str, surface: &str) {
         if surface.chars().count() > self.max_surface_chars {
             return;
         }
         if self.max_reading_chars > 0 && reading.chars().count() > self.max_reading_chars {
+            return;
+        }
+        if self.blocklist.contains(surface) {
             return;
         }
         let now = now_unix();
@@ -171,6 +234,7 @@ impl LearningCache {
     pub fn load(path: &Path, config: LearningConfig) -> anyhow::Result<Self> {
         let file = std::fs::File::open(path)?;
         let reader = std::io::BufReader::new(file);
+        // load_blocklist_file is separate; caller wires it via set_blocklist.
         let mut cache = Self::new(config);
 
         for line in reader.lines() {
@@ -601,6 +665,59 @@ mod tests {
             &"あ".repeat(LearningConfig::DEFAULT_MAX_SURFACE_CHARS),
         );
         assert_eq!(cache.entry_count(), 1);
+    }
+
+    #[test]
+    fn test_blocklist_blocks_record() {
+        let mut cache = cache_with(100);
+        let mut bl = HashSet::new();
+        bl.insert("BAD".to_string());
+        cache.set_blocklist(bl);
+
+        cache.record("よみ", "BAD");
+        cache.record("よみ", "OK");
+
+        let r = cache.lookup("よみ");
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].0, "OK");
+    }
+
+    #[test]
+    fn test_purge_blocklisted() {
+        let mut cache = cache_with(100);
+        cache.record("a", "clean");
+        cache.record("a", "dirty");
+        cache.record("b", "dirty");
+        cache.record("c", "also_clean");
+        assert_eq!(cache.entry_count(), 4);
+
+        let mut bl = HashSet::new();
+        bl.insert("dirty".to_string());
+        cache.set_blocklist(bl);
+
+        let removed = cache.purge_blocklisted();
+        assert_eq!(removed, 2);
+        assert_eq!(cache.entry_count(), 2);
+        // reading "b" should be gone entirely (only had "dirty")
+        assert!(cache.lookup("b").is_empty());
+        assert_eq!(cache.lookup("a").len(), 1);
+        assert_eq!(cache.lookup("a")[0].0, "clean");
+        assert!(cache.is_dirty());
+    }
+
+    #[test]
+    fn test_load_blocklist_file() {
+        let file = NamedTempFile::new().unwrap();
+        std::fs::write(
+            file.path(),
+            "# comment\n\nword1\nword2\n# another\nword3\n",
+        )
+        .unwrap();
+        let bl = LearningCache::load_blocklist_file(file.path()).unwrap();
+        assert_eq!(bl.len(), 3);
+        assert!(bl.contains("word1"));
+        assert!(bl.contains("word2"));
+        assert!(bl.contains("word3"));
     }
 
     #[test]
