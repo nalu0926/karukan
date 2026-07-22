@@ -600,6 +600,11 @@ impl InputMethodEngine {
                     match key.keysym {
                         Keysym::KEY_N | Keysym::KEY_N_UPPER => return self.next_candidate(),
                         Keysym::KEY_P | Keysym::KEY_P_UPPER => return self.prev_candidate(),
+                        // Ctrl+H: same as Backspace — drop back to composing
+                        // instead of letting the app delete committed text
+                        Keysym::KEY_H | Keysym::KEY_H_UPPER => {
+                            return self.backspace_conversion();
+                        }
                         _ => {}
                     }
                 }

@@ -363,3 +363,37 @@ fn test_cursor_composed_hiragana_tracking() {
     assert_eq!(engine.input_buf.text, "");
     assert_eq!(engine.input_buf.cursor_pos, 0);
 }
+
+#[test]
+fn test_ctrl_h_deletes_backward_in_composing() {
+    let mut engine = InputMethodEngine::new();
+
+    // Type "あいう"
+    engine.process_key(&press('a'));
+    engine.process_key(&press('i'));
+    engine.process_key(&press('u'));
+    assert_eq!(engine.preedit().unwrap().text(), "あいう");
+
+    // Ctrl+H should behave exactly like Backspace (delete "う")
+    let result = engine.process_key(&press_ctrl(Keysym::KEY_H));
+    assert!(result.consumed, "Ctrl+H must be consumed while composing");
+    assert_eq!(engine.preedit().unwrap().text(), "あい");
+}
+
+#[test]
+fn test_ctrl_d_deletes_forward_in_composing() {
+    let mut engine = InputMethodEngine::new();
+
+    // Type "あいう", move to beginning
+    engine.process_key(&press('a'));
+    engine.process_key(&press('i'));
+    engine.process_key(&press('u'));
+    engine.process_key(&press_key(Keysym::HOME));
+    assert_eq!(engine.preedit().unwrap().caret(), 0);
+
+    // Ctrl+D should behave exactly like Delete (remove "あ")
+    let result = engine.process_key(&press_ctrl(Keysym::KEY_D));
+    assert!(result.consumed, "Ctrl+D must be consumed while composing");
+    assert_eq!(engine.preedit().unwrap().text(), "いう");
+    assert_eq!(engine.preedit().unwrap().caret(), 0);
+}

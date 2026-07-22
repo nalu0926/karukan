@@ -247,6 +247,12 @@ impl InputMethodEngine {
                 Keysym::KEY_E | Keysym::KEY_E_UPPER => return self.move_caret_end(),
                 // Ctrl+F: move right (Emacs-style Right)
                 Keysym::KEY_F | Keysym::KEY_F_UPPER => return self.move_caret_right(),
+                // Ctrl+H: delete backward (Emacs-style Backspace). Without this
+                // the event falls through to the client app, whose standard
+                // key binding deletes committed text behind the preedit.
+                Keysym::KEY_H | Keysym::KEY_H_UPPER => return self.backspace_composing(),
+                // Ctrl+D: delete forward (Emacs-style Delete)
+                Keysym::KEY_D | Keysym::KEY_D_UPPER => return self.delete_composing(),
                 _ => {}
             }
         }

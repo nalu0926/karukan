@@ -70,3 +70,21 @@ fn test_alphabet_mode_space_inserts_literal_space() {
     engine.process_key(&press('k'));
     assert_eq!(engine.preedit().unwrap().text(), "New york");
 }
+
+#[test]
+fn test_ctrl_h_returns_to_composing_from_conversion() {
+    let mut engine = InputMethodEngine::new();
+
+    // Type "あい" and enter conversion
+    engine.process_key(&press('a'));
+    engine.process_key(&press('i'));
+    engine.process_key(&press_key(Keysym::SPACE));
+    assert!(matches!(engine.state(), InputState::Conversion { .. }));
+
+    // Ctrl+H should behave like Backspace: consume the event and drop
+    // back to composing instead of leaking a delete to the client app
+    let result = engine.process_key(&press_ctrl(Keysym::KEY_H));
+    assert!(result.consumed, "Ctrl+H must be consumed during conversion");
+    assert!(matches!(engine.state(), InputState::Composing { .. }));
+    assert_eq!(engine.preedit().unwrap().text(), "あい");
+}
