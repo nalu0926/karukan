@@ -117,17 +117,26 @@ impl LearningCache {
         Ok(set)
     }
 
-    /// Remove every entry whose surface is in the blocklist.
+    fn surface_is_blocklisted(&self, surface: &str) -> bool {
+        Self::matches_blocklist(&self.blocklist, surface)
+    }
+
+    fn matches_blocklist(blocklist: &HashSet<String>, surface: &str) -> bool {
+        blocklist.iter().any(|bl| surface.contains(bl.as_str()))
+    }
+
+    /// Remove every entry whose surface contains a blocklisted word.
     /// Returns the number of (reading, surface) pairs removed.
     pub fn purge_blocklisted(&mut self) -> usize {
         if self.blocklist.is_empty() {
             return 0;
         }
+        let bl = &self.blocklist;
         let mut removed = 0usize;
         let mut empty_readings: Vec<String> = Vec::new();
         for (reading, entries) in self.entries.iter_mut() {
             let before = entries.len();
-            entries.retain(|e| !self.blocklist.contains(&e.surface));
+            entries.retain(|e| !Self::matches_blocklist(bl, &e.surface));
             removed += before - entries.len();
             if entries.is_empty() {
                 empty_readings.push(reading.clone());
@@ -155,7 +164,7 @@ impl LearningCache {
         if self.max_reading_chars > 0 && reading.chars().count() > self.max_reading_chars {
             return;
         }
-        if self.blocklist.contains(surface) {
+        if self.surface_is_blocklisted(surface) {
             return;
         }
         let now = now_unix();
@@ -675,6 +684,7 @@ mod tests {
         cache.set_blocklist(bl);
 
         cache.record("よみ", "BAD");
+        cache.record("よみ", "BADも");
         cache.record("よみ", "OK");
 
         let r = cache.lookup("よみ");
@@ -687,18 +697,18 @@ mod tests {
         let mut cache = cache_with(100);
         cache.record("a", "clean");
         cache.record("a", "dirty");
+        cache.record("a", "dirtyも");
         cache.record("b", "dirty");
         cache.record("c", "also_clean");
-        assert_eq!(cache.entry_count(), 4);
+        assert_eq!(cache.entry_count(), 5);
 
         let mut bl = HashSet::new();
         bl.insert("dirty".to_string());
         cache.set_blocklist(bl);
 
         let removed = cache.purge_blocklisted();
-        assert_eq!(removed, 2);
+        assert_eq!(removed, 3);
         assert_eq!(cache.entry_count(), 2);
-        // reading "b" should be gone entirely (only had "dirty")
         assert!(cache.lookup("b").is_empty());
         assert_eq!(cache.lookup("a").len(), 1);
         assert_eq!(cache.lookup("a")[0].0, "clean");
