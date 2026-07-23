@@ -37,18 +37,20 @@ git rebase upstream/main
 日本語入力中に Shift+英字で意図せず Alphabet モードに切り替わるのを防止。
 
 - `karukan-im/src/core/engine/input.rs`
-  - `process_key_empty` 内の `self.input_mode = InputMode::Alphabet`（Shift+alpha 検出）をコメントアウト
-  - `process_key_composing` 内の同様のブロックをコメントアウト
+  - `process_key_empty` 内の Shift+alpha 検出（一時 Alphabet モード切替）を削除
+  - `process_key_composing` 内の同様のブロックを削除
 - 英数キー（JIS）や右⌘タップでのモード切替は引き続き有効
+- upstream #38 は同じ問題を「単語単位の一時モード」で緩和したが、誤爆時に当該単語が英字化する挙動自体は残るため、フォークでは引き続き完全無効化
+- この無効化（および 1. の Ctrl+K 無効化）が前提の upstream テスト29件は `#[ignore = "fork: ..."]` を付与している
 
 ### 3. 学習キャッシュの読み最大文字数制限
 
 長い読み（文節以上）の学習を抑制し、予測変換候補の汚染を防ぐ。
 
-- `karukan-engine/src/learning.rs`: `LearningCache` に `max_reading_chars` フィールド。`record()` で読みが上限超過なら学習スキップ
+- `karukan-engine/src/learning.rs`: upstream #64 の `LearningConfig` に `max_reading_chars` フィールドを追加（upstream の `max_surface_chars`＝surface 基準と併用）。`record()` で読みが上限超過なら学習スキップ
 - `karukan-im/src/config/settings.rs`: `LearningSettings` に `max_reading_chars` 追加
 - `karukan-im/config/default.toml`: `max_reading_chars = 8`
-- `karukan-im/src/core/engine/init.rs`: 初期化時に `max_reading_chars` を渡す
+- `karukan-im/src/core/engine/init.rs`: 初期化時に `LearningConfig` 経由で渡す
 
 `config.toml` の `[learning]` セクションで変更可能（0 = 無制限）:
 
@@ -63,6 +65,21 @@ max_reading_chars = 8
 
 - `karukan-im/src/core/engine/conversion.rs`
   - `process_key_conversion` で `Keysym::SPACE` に shift guard を追加し `prev_candidate()` を呼ぶ
+
+### 5. 学習 surface ブロックリスト（部分一致）
+
+特定の変換結果を学習対象から除外する。ブロックリスト語を**含む** surface も対象（部分一致）。
+
+- `~/Library/Application Support/com.karukan.karukan-im/learning_blocklist.txt`（1行1語、`#` コメント可）
+- 起動時ロード＋既存エントリのパージ、以降は定期パージ（`purge_learning_blocklist`）
+- `karukan-engine/src/learning.rs`, `karukan-im/src/core/engine/init.rs`, `karukan-im/src/server/mod.rs`
+- 閲覧・削除・ブロックリスト編集の Web UI: `scripts/learning_manager.py`（未コミットのローカルツール）
+
+### 6. Ctrl+H / Ctrl+D を削除キーとして明示処理
+
+エンジンが Ctrl+H を not_consumed で返すと、macOS では Cocoa 標準の `deleteBackward:` がクライアント側で発火し、marked text を迂回して確定済みテキストが削れる。Composing 状態に Ctrl+H=Backspace / Ctrl+D=Delete、Conversion 状態に Ctrl+H=Backspace を追加。
+
+- `karukan-im/src/core/engine/input.rs`, `conversion.rs`, `keycode.rs`
 
 ## 運用メモ
 
